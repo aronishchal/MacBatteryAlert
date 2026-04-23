@@ -34,6 +34,7 @@ final class BatteryMonitor: ObservableObject {
     private var timer: Timer?
     private var lowBatteryAlertSent = false
     private var chargedAlertSent = false
+    private var hasStartedMonitoring = false
     private var cancellables = Set<AnyCancellable>()
 
     init(settings: BatteryAlertSettings, presenter: TopBannerPresenter) {
@@ -41,19 +42,24 @@ final class BatteryMonitor: ObservableObject {
         self.presenter = presenter
 
         settings.$lowBatteryThreshold
+            .dropFirst()
             .sink { [weak self] _ in
-                self?.rearmAlertsForCurrentState()
+                self?.handleLowThresholdChange()
             }
             .store(in: &cancellables)
 
         settings.$chargedThreshold
+            .dropFirst()
             .sink { [weak self] _ in
-                self?.rearmAlertsForCurrentState()
+                self?.handleChargedThresholdChange()
             }
             .store(in: &cancellables)
     }
 
     func start() {
+        hasStartedMonitoring = true
+        lowBatteryAlertSent = false
+        chargedAlertSent = false
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
             Task { @MainActor in
@@ -131,8 +137,15 @@ final class BatteryMonitor: ObservableObject {
         )
     }
 
-    private func rearmAlertsForCurrentState() {
-        lowBatteryAlertSent = snapshot.isOnBattery && snapshot.percentage <= settings.lowBatteryThreshold
-        chargedAlertSent = snapshot.isPluggedIn && snapshot.percentage >= settings.chargedThreshold
+    private func handleLowThresholdChange() {
+        guard hasStartedMonitoring else { return }
+        lowBatteryAlertSent = false
+        refresh()
+    }
+
+    private func handleChargedThresholdChange() {
+        guard hasStartedMonitoring else { return }
+        chargedAlertSent = false
+        refresh()
     }
 }
