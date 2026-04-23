@@ -2,23 +2,15 @@ import Foundation
 import Combine
 
 final class BatteryAlertSettings: ObservableObject {
-    @Published var lowBatteryThreshold: Int {
-        didSet {
-            lowBatteryThreshold = Self.clamp(lowBatteryThreshold)
-            defaults.set(lowBatteryThreshold, forKey: Keys.lowBatteryThreshold)
-        }
-    }
-
-    @Published var chargedThreshold: Int {
-        didSet {
-            chargedThreshold = Self.clamp(chargedThreshold)
-            defaults.set(chargedThreshold, forKey: Keys.chargedThreshold)
-        }
-    }
-
+    @Published private(set) var lowBatteryThreshold: Int
+    @Published private(set) var chargedThreshold: Int
     @Published var alertDuration: Double {
         didSet {
-            alertDuration = min(max(alertDuration, 2), 12)
+            let clamped = min(max(alertDuration, 2), 12)
+            if alertDuration != clamped {
+                alertDuration = clamped
+                return
+            }
             defaults.set(alertDuration, forKey: Keys.alertDuration)
         }
     }
@@ -38,6 +30,20 @@ final class BatteryAlertSettings: ObservableObject {
         lowBatteryThreshold = Self.clamp(storedLow)
         chargedThreshold = Self.clamp(storedCharged)
         alertDuration = min(max(storedDuration, 2), 12)
+    }
+
+    func updateLowBatteryThreshold(_ value: Int) {
+        let clamped = Self.clamp(value)
+        guard lowBatteryThreshold != clamped else { return }
+        lowBatteryThreshold = clamped
+        defaults.set(clamped, forKey: Keys.lowBatteryThreshold)
+    }
+
+    func updateChargedThreshold(_ value: Int) {
+        let clamped = Self.clamp(value)
+        guard chargedThreshold != clamped else { return }
+        chargedThreshold = clamped
+        defaults.set(clamped, forKey: Keys.chargedThreshold)
     }
 
     func markOnboardingShown() {

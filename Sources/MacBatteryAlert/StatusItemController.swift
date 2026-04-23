@@ -4,7 +4,8 @@ import Combine
 @MainActor
 final class StatusItemController: NSObject {
     private let monitor: BatteryMonitor
-    private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+    private let openSettingsAction: () -> Void
+    private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let menu = NSMenu()
 
     private let batteryItem = NSMenuItem(title: "Battery: --", action: nil, keyEquivalent: "")
@@ -13,8 +14,9 @@ final class StatusItemController: NSObject {
 
     private var cancellables = Set<AnyCancellable>()
 
-    init(monitor: BatteryMonitor) {
+    init(monitor: BatteryMonitor, openSettings: @escaping () -> Void) {
         self.monitor = monitor
+        self.openSettingsAction = openSettings
         super.init()
         configureMenu()
         bindMonitor()
@@ -31,10 +33,6 @@ final class StatusItemController: NSObject {
         menu.addItem(statusItemDescription)
         menu.addItem(lastAlertItem)
         menu.addItem(.separator())
-
-        let refreshItem = NSMenuItem(title: "Refresh Now", action: #selector(refreshNow), keyEquivalent: "r")
-        refreshItem.target = self
-        menu.addItem(refreshItem)
 
         let settingsItem = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
@@ -55,7 +53,6 @@ final class StatusItemController: NSObject {
         menu.addItem(quitItem)
 
         statusItem.menu = menu
-        statusItem.button?.imagePosition = .imageLeading
     }
 
     private func bindMonitor() {
@@ -75,9 +72,16 @@ final class StatusItemController: NSObject {
 
     private func updateButton() {
         guard let button = statusItem.button else { return }
-        button.title = monitor.menuBarTitle
+        button.title = ""
+        button.attributedTitle = NSAttributedString(string: "")
         button.toolTip = "Battery Alert: \(monitor.snapshot.percentage)% - \(monitor.snapshot.statusText)"
-        button.image = NSImage(systemSymbolName: monitor.menuBarSymbolName, accessibilityDescription: "Battery status")
+        let config = NSImage.SymbolConfiguration(pointSize: 11, weight: .medium)
+        button.image = NSImage(systemSymbolName: "bell.badge", accessibilityDescription: "Notifier")?.withSymbolConfiguration(config)
+        button.imageScaling = .scaleProportionallyDown
+
+        if let cell = button.cell as? NSButtonCell {
+            cell.highlightsBy = []
+        }
     }
 
     private func updateMenuItems() {
@@ -86,13 +90,8 @@ final class StatusItemController: NSObject {
         lastAlertItem.title = "Last alert: \(monitor.lastAlertDescription)"
     }
 
-    @objc private func refreshNow() {
-        monitor.refresh()
-    }
-
     @objc private func openSettings() {
-        NSApp.activate(ignoringOtherApps: true)
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        openSettingsAction()
     }
 
     @objc private func testLowAlert() {

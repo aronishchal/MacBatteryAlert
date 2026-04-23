@@ -6,12 +6,7 @@ struct MacBatteryAlertApp: App {
 
     var body: some Scene {
         Settings {
-            SettingsView(
-                settings: appDelegate.settings,
-                monitor: appDelegate.monitor,
-                launchAtLoginManager: appDelegate.launchAtLoginManager
-            )
-            .frame(width: 400, height: 420)
+            EmptyView()
         }
     }
 }

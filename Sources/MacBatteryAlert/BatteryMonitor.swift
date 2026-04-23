@@ -6,16 +6,27 @@ final class BatteryMonitor: ObservableObject {
     @Published private(set) var snapshot = BatterySnapshot(percentage: 0, isCharging: false, powerSource: .unknown)
     @Published private(set) var lastAlertDescription = "No alerts yet"
 
-    var menuBarSymbolName: String {
-        if snapshot.isOnBattery {
-            return snapshot.percentage <= settings.lowBatteryThreshold ? "battery.25" : "battery.75"
-        }
-
-        return snapshot.isCharging ? "battery.100.bolt" : "powerplug"
+    enum MenuBarState {
+        case low
+        case charging
+        case charged
+        case normal
     }
 
-    var menuBarTitle: String {
-        "\(snapshot.percentage)%"
+    var menuBarState: MenuBarState {
+        if snapshot.isPluggedIn && snapshot.percentage >= settings.chargedThreshold {
+            return .charged
+        }
+
+        if snapshot.isCharging {
+            return .charging
+        }
+
+        if snapshot.isOnBattery && snapshot.percentage <= settings.lowBatteryThreshold {
+            return .low
+        }
+
+        return .normal
     }
 
     private let settings: BatteryAlertSettings

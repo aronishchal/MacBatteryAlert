@@ -54,9 +54,10 @@ final class TopBannerPresenter {
         let height: CGFloat = 92
         let visibleFrame = screen.visibleFrame
         let originX = visibleFrame.midX - width / 2
-        let topInset: CGFloat = 72
-        let animationLift: CGFloat = 36
-        let shownY = visibleFrame.maxY - height - topInset
+        let menuBarHeight = max(0, screen.frame.maxY - visibleFrame.maxY)
+        let topInset: CGFloat = 124
+        let animationLift: CGFloat = 52
+        let shownY = screen.frame.maxY - menuBarHeight - height - topInset
         let hiddenY = shownY + height + animationLift
 
         panel.setFrame(NSRect(x: originX, y: hiddenY, width: width, height: height), display: true)
@@ -89,7 +90,7 @@ final class TopBannerPresenter {
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true
-        panel.level = .statusBar
+        panel.level = .popUpMenu
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         panel.ignoresMouseEvents = true
         panel.alphaValue = 1
